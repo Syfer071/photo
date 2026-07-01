@@ -1389,3 +1389,10 @@ body.light-theme input:focus, body.light-theme select:focus, body.light-theme te
   background-color: rgba(0, 0, 0, 0.04);
 }
 
+@media (max-width: 768px) {
+  #faq-section > .container > div:nth-child(2) {
+    grid-template-columns: 1fr !important;
+    gap: 30px !important;
+  }
+}
+
