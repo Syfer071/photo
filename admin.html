@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard | Abi Photography Bookings</title>
+  <link rel="stylesheet" href="public/style.css">
+</head>
+<body>
+
+  <!-- Header Section -->
+  <header id="header" class="scrolled">
+    <div class="container nav-container" style="height: 70px;">
+      <div class="logo">
+        <span class="logo-main">ABI</span>
+        <span class="logo-sub">PHOTOGRAPHY</span>
+      </div>
+
+      <div class="nav-cta">
+      </div>
+    </div>
+  </header>
+
+  <!-- Admin Content Section -->
+  <main class="container admin-section">
+    <div class="admin-header-actions">
+      <div>
+        <h1 style="font-size: 2.5rem; color: #ffffff;" id="admin-page-title">Admin Dashboard</h1>
+        <p style="color: var(--text-secondary); margin-top: 4px;">Manage client scheduling requests and studio session statuses.</p>
+      </div>
+      <div style="display: flex; gap: 12px;">
+        <button class="btn btn-secondary" id="btn-load-samples" style="padding: 10px 20px; font-size: 0.85rem;">Load Demo Data</button>
+        <button class="btn btn-secondary" id="btn-clear-all" style="padding: 10px 20px; font-size: 0.85rem; border-color: rgba(231, 76, 60, 0.4); color: #e74c3c;">Clear All</button>
+      </div>
+    </div>
+
+    <!-- Quick Stats Grid -->
+    <div class="admin-stats-grid">
+      <!-- Total -->
+      <div class="admin-stat-card">
+        <div class="admin-stat-icon">📊</div>
+        <div class="admin-stat-info">
+          <span class="admin-stat-val" id="stat-total">0</span>
+          <span class="admin-stat-lbl">Total Requests</span>
+        </div>
+      </div>
+      <!-- Pending -->
+      <div class="admin-stat-card">
+        <div class="admin-stat-icon" style="color: var(--primary-gold); background-color: rgba(212, 175, 55, 0.1);">⏳</div>
+        <div class="admin-stat-info">
+          <span class="admin-stat-val" id="stat-pending" style="color: var(--primary-gold);">0</span>
+          <span class="admin-stat-lbl">Pending</span>
+        </div>
+      </div>
+      <!-- Confirmed -->
+      <div class="admin-stat-card">
+        <div class="admin-stat-icon" style="color: #2ecc71; background-color: rgba(46, 204, 113, 0.1);">✅</div>
+        <div class="admin-stat-info">
+          <span class="admin-stat-val" id="stat-confirmed" style="color: #2ecc71;">0</span>
+          <span class="admin-stat-lbl">Confirmed</span>
+        </div>
+      </div>
+      <!-- Cancelled -->
+      <div class="admin-stat-card">
+        <div class="admin-stat-icon" style="color: #e74c3c; background-color: rgba(231, 76, 60, 0.1);">❌</div>
+        <div class="admin-stat-info">
+          <span class="admin-stat-val" id="stat-cancelled" style="color: #e74c3c;">0</span>
+          <span class="admin-stat-lbl">Cancelled</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search & Filter Controls -->
+    <div class="admin-table-controls">
+      <div class="table-filter-group">
+        <select class="form-select" id="filter-service" style="padding: 8px 16px; font-size: 0.85rem;">
+          <option value="all">All Services</option>
+          <option value="Portrait">Portrait</option>
+          <option value="Maternity">Maternity</option>
+          <option value="Family">Family</option>
+          <option value="Wedding">Wedding</option>
+        </select>
+        <select class="form-select" id="filter-status" style="padding: 8px 16px; font-size: 0.85rem;">
+          <option value="all">All Statuses</option>
+          <option value="Pending">Pending</option>
+          <option value="Confirmed">Confirmed</option>
+          <option value="Cancelled">Cancelled</option>
+        </select>
+      </div>
+      <div>
+        <input type="text" class="form-input" id="search-input" placeholder="Search client name or phone..." style="padding: 8px 16px; font-size: 0.85rem; width: 250px;">
+      </div>
+    </div>
+
+    <!-- Bookings Table -->
+    <div class="admin-table-wrapper">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Client Details</th>
+            <th>Session Type</th>
+            <th>Preferred Date</th>
+            <th>Notes & Requests</th>
+            <th>Status</th>
+            <th style="text-align: right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="bookings-tbody">
+          <!-- Dynamically populated rows -->
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // --- Initialize Firebase ---
+      const firebaseConfig = {
+        apiKey: "AIzaSyAy95s-MNAVqt3bH51zYwjRfqhFye9-bXQ",
+        authDomain: "abi-photography-123.firebaseapp.com",
+        projectId: "abi-photography-123",
+        storageBucket: "abi-photography-123.firebasestorage.app",
+        messagingSenderId: "60521136690",
+        appId: "1:60521136690:web:3c3b9f457882162dfdf22b"
+      };
+
+      if (typeof firebase !== 'undefined') {
+        firebase.initializeApp(firebaseConfig);
+        window.db = firebase.firestore();
+      }
+
+      // --- Theme Toggle Integration ---
+      const themeCheckbox = document.getElementById('theme-checkbox');
+      const currentTheme = localStorage.getItem('theme') || 'dark';
+
+      // Set initial state
+      if (currentTheme === 'light') {
+        document.body.classList.add('light-theme');
+        if (themeCheckbox) themeCheckbox.checked = true;
+      }
+
+      if (themeCheckbox) {
+        themeCheckbox.addEventListener('change', (e) => {
+          if (e.target.checked) {
+            document.body.classList.add('light-theme');
+            localStorage.setItem('theme', 'light');
+          } else {
+            document.body.classList.remove('light-theme');
+            localStorage.setItem('theme', 'dark');
+          }
+        });
+      }
+
+      // --- Bookings Data Manager ---
+      const tbody = document.getElementById('bookings-tbody');
+      const searchInput = document.getElementById('search-input');
+      const filterService = document.getElementById('filter-service');
+      const filterStatus = document.getElementById('filter-status');
+      
+      const statTotal = document.getElementById('stat-total');
+      const statPending = document.getElementById('stat-pending');
+      const statConfirmed = document.getElementById('stat-confirmed');
+      const statCancelled = document.getElementById('stat-cancelled');
+
+      // Demo sample data
+      const demoData = [
+        {
+          id: 'bk_demo_1',
+          name: 'Arun Kumar',
+          phone: '094432 58190',
+          service: 'Wedding',
+          date: '2026-08-15',
+          notes: 'Looking for candidate wedding album and outdoor pre-wedding couple shoot around Shoolagiri hills.',
+          status: 'Confirmed',
+          createdAt: new Date(Date.now() - 86400000 * 2).toISOString()
+        },
+        {
+          id: 'bk_demo_2',
+          name: 'Deepa Lakshmi',
+          phone: '081224 99011',
+          service: 'Maternity',
+          date: '2026-07-28',
+          notes: 'Maternity outdoor session. Prefers late evening warm sunlight setting.',
+          status: 'Pending',
+          createdAt: new Date(Date.now() - 86400000).toISOString()
+        },
+        {
+          id: 'bk_demo_3',
+          name: 'Karthik Rao',
+          phone: '098450 12345',
+          service: 'Portrait',
+          date: '2026-07-10',
+          notes: 'Corporate profile headshots and portfolio.',
+          status: 'Pending',
+          createdAt: new Date().toISOString()
+        }
+      ];
+
+      const getBookings = () => {
+        return JSON.parse(localStorage.getItem('bookings')) || [];
+      };
+
+      const saveBookings = (bookings) => {
+        localStorage.setItem('bookings', JSON.stringify(bookings));
+      };
+
+      // --- Setup Firestore Real-time Sync ---
+      if (window.db) {
+        window.db.collection('bookings').onSnapshot((snapshot) => {
+          const bookings = [];
+          snapshot.forEach((doc) => {
+            const data = doc.data();
+            let dateStr = data.createdAt ? (data.createdAt.toDate ? data.createdAt.toDate().toISOString() : data.createdAt) : new Date().toISOString();
+            bookings.push({
+              id: doc.id,
+              ...data,
+              createdAt: dateStr
+            });
+          });
+          // Cache to localStorage
+          saveBookings(bookings);
+          renderTable();
+        }, (error) => {
+          console.error("Firestore sync failed:", error);
+          renderTable();
+        });
+      }
+
+
+      const updateStats = (bookings) => {
+        statTotal.textContent = bookings.length;
+        statPending.textContent = bookings.filter(b => b.status === 'Pending').length;
+        statConfirmed.textContent = bookings.filter(b => b.status === 'Confirmed').length;
+        statCancelled.textContent = bookings.filter(b => b.status === 'Cancelled').length;
+      };
+
+      const renderTable = () => {
+        const bookings = getBookings();
+        updateStats(bookings);
+
+        const searchTerm = searchInput.value.toLowerCase().trim();
+        const serviceFilter = filterService.value;
+        const statusFilter = filterStatus.value;
+
+        tbody.innerHTML = '';
+
+        const filtered = bookings.filter(b => {
+          const matchesSearch = b.name.toLowerCase().includes(searchTerm) || b.phone.includes(searchTerm);
+          const matchesService = serviceFilter === 'all' || b.service === serviceFilter;
+          const matchesStatus = statusFilter === 'all' || b.status === statusFilter;
+          return matchesSearch && matchesService && matchesStatus;
+        });
+
+        // Sort: newest request created first
+        filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        if (filtered.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="6" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                No booking requests found matching filters.
+              </td>
+            </tr>
+          `;
+          return;
+        }
+
+        filtered.forEach(b => {
+          const tr = document.createElement('tr');
+          
+          let statusBadgeClass = 'badge-pending';
+          if (b.status === 'Confirmed') statusBadgeClass = 'badge-confirmed';
+          if (b.status === 'Cancelled') statusBadgeClass = 'badge-cancelled';
+
+          tr.innerHTML = `
+            <td>
+              <div style="font-weight: 600; color: var(--text-primary);">${b.name}</div>
+              <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px;">${b.phone}</div>
+            </td>
+            <td>
+              <span style="font-weight: 500;">${b.service}</span>
+            </td>
+            <td>
+              <div>${new Date(b.date).toLocaleDateString('en-IN', {day: 'numeric', month: 'short', year: 'numeric'})}</div>
+            </td>
+            <td>
+              <p class="notes-cell" title="${b.notes || 'No requests'}">${b.notes || '-'}</p>
+            </td>
+            <td>
+              <span class="badge ${statusBadgeClass}">${b.status}</span>
+            </td>
+            <td style="text-align: right;">
+              <div class="action-buttons-group" style="justify-content: flex-end;">
+                <button class="btn-action confirm" data-id="${b.id}" title="Confirm Appointment">✓</button>
+                <button class="btn-action cancel" data-id="${b.id}" title="Cancel Appointment">✕</button>
+                <button class="btn-action delete" data-id="${b.id}" title="Delete Record">🗑</button>
+              </div>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        // Attach action handlers
+        tbody.querySelectorAll('.btn-action.confirm').forEach(btn => {
+          btn.addEventListener('click', (e) => updateStatus(e.target.dataset.id, 'Confirmed'));
+        });
+
+        tbody.querySelectorAll('.btn-action.cancel').forEach(btn => {
+          btn.addEventListener('click', (e) => updateStatus(e.target.dataset.id, 'Cancelled'));
+        });
+
+        tbody.querySelectorAll('.btn-action.delete').forEach(btn => {
+          btn.addEventListener('click', (e) => deleteBooking(e.target.dataset.id));
+        });
+      };
+
+      const updateStatus = (id, newStatus) => {
+        if (window.db && !id.startsWith('bk_demo')) {
+          window.db.collection('bookings').doc(id).update({
+            status: newStatus
+          })
+          .catch(err => {
+            console.error("Firestore update failed, saving locally:", err);
+            let bookings = getBookings();
+            bookings = bookings.map(b => b.id === id ? { ...b, status: newStatus } : b);
+            saveBookings(bookings);
+            renderTable();
+          });
+        } else {
+          let bookings = getBookings();
+          bookings = bookings.map(b => b.id === id ? { ...b, status: newStatus } : b);
+          saveBookings(bookings);
+          renderTable();
+        }
+      };
+
+      const deleteBooking = (id) => {
+        if (confirm('Are you sure you want to permanently delete this booking request?')) {
+          if (window.db && !id.startsWith('bk_demo')) {
+            window.db.collection('bookings').doc(id).delete()
+            .catch(err => {
+              console.error("Firestore delete failed, saving locally:", err);
+              let bookings = getBookings();
+              bookings = bookings.filter(b => b.id !== id);
+              saveBookings(bookings);
+              renderTable();
+            });
+          } else {
+            let bookings = getBookings();
+            bookings = bookings.filter(b => b.id !== id);
+            saveBookings(bookings);
+            renderTable();
+          }
+        }
+      };
+
+
+      // Control handlers
+      document.getElementById('btn-load-samples').addEventListener('click', () => {
+        let current = getBookings();
+        // Avoid duplicates in demo
+        const merged = [...current];
+        demoData.forEach(d => {
+          if (!merged.some(c => c.id === d.id)) {
+            merged.push(d);
+          }
+        });
+        saveBookings(merged);
+        renderTable();
+      });
+
+      document.getElementById('btn-clear-all').addEventListener('click', () => {
+        if (confirm('Clear all booking records from local storage?')) {
+          saveBookings([]);
+          renderTable();
+        }
+      });
+
+      // Filter listeners
+      searchInput.addEventListener('input', renderTable);
+      filterService.addEventListener('change', renderTable);
+      filterStatus.addEventListener('change', renderTable);
+
+      // Initial Render
+      renderTable();
+    });
+  </script>
+</body>
+</html>
