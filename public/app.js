@@ -2,12 +2,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- Initialize Firebase ---
   const firebaseConfig = {
-    apiKey: "AIzaSyAy95s-MNAVqt3bH51zYwjRfqhFye9-bXQ",
-    authDomain: "abi-photography-123.firebaseapp.com",
-    projectId: "abi-photography-123",
-    storageBucket: "abi-photography-123.firebasestorage.app",
-    messagingSenderId: "60521136690",
-    appId: "1:60521136690:web:3c3b9f457882162dfdf22b"
+    apiKey: "AIzaSyCyyoygedQLNSbxJx0Kcbj7wQ4GcdAqe2U",
+    authDomain: "abi-studio-80d8f.firebaseapp.com",
+    projectId: "abi-studio-80d8f",
+    storageBucket: "abi-studio-80d8f.firebasestorage.app",
+    messagingSenderId: "52758403373",
+    appId: "1:52758403373:web:12aee03f45532bdcec1ba4"
   };
 
   if (typeof firebase !== 'undefined') {
